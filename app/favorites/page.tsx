@@ -1,24 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RecipeDisplayCard } from "@/components/recipe-card"; // Renamed component
+import { RecipeDisplayCard } from "@/components/recipe-card";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from 'lucide-react';
+import Link from "next/link"; // Import Link for the empty state message
 
-// Interface for a favorited recipe stored in our MongoDB
 interface StoredFavoriteRecipe {
-  _id: string; // MongoDB's unique document ID
-  recipeId: string; // TheMealDB's unique recipe ID
+  _id: string;
+  recipeId: string;
   recipeName: string;
   imageUrl: string;
+  // category is not stored in DB, so we'll omit it here for simplicity
+  // In a real app, you might store it or fetch it on demand.
 }
 
-export default function MyFavoritesPage() { // Renamed for clarity
-  const [myFavoriteRecipes, setMyFavoriteRecipes] = useState<StoredFavoriteRecipe[]>([]); // Renamed for clarity
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(true); // Renamed for clarity
+export default function MyFavoritesPage() {
+  const [myFavoriteRecipes, setMyFavoriteRecipes] = useState<StoredFavoriteRecipe[]>([]);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(true);
   const { toast } = useToast();
 
-  // Function to fetch the list of favorited recipes from our backend
   const fetchMyFavorites = useCallback(async () => {
     setIsLoadingFavorites(true);
     try {
@@ -46,19 +47,16 @@ export default function MyFavoritesPage() { // Renamed for clarity
     }
   }, [toast]);
 
-  // Fetch favorites on component mount
   useEffect(() => {
     fetchMyFavorites();
   }, [fetchMyFavorites]);
 
-  // Handler for removing a recipe from favorites directly from this page
-  const handleRemoveFavoriteFromList = async (recipeIdToRemove: string) => { // Renamed for clarity
+  const handleRemoveFavoriteFromList = async (recipeIdToRemove: string) => {
     try {
       const response = await fetch(`/api/favorites/${recipeIdToRemove}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        // Optimistically update the UI by filtering out the removed recipe
         setMyFavoriteRecipes(prevFavorites => prevFavorites.filter((fav) => fav.recipeId !== recipeIdToRemove));
         toast({
           title: "Recipe Removed",
@@ -84,35 +82,39 @@ export default function MyFavoritesPage() { // Renamed for clarity
 
   if (isLoadingFavorites) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 text-gray-600">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-xl">Loading your cherished recipes...</p>
+      <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+        <Loader2 className="h-14 w-14 animate-spin text-primary mb-6" />
+        <p className="text-2xl font-medium">Loading your cherished recipes...</p>
         <span className="sr-only">Loading favorite recipes...</span>
       </div>
     );
   }
 
   return (
-    <section className="space-y-8 py-8">
-      <h1 className="text-4xl font-extrabold text-center text-gray-800 dark:text-gray-100">
+    <section className="space-y-10 py-8 animate-fade-in"> {/* Added fade-in animation */}
+      <h1 className="text-5xl font-heading font-extrabold text-center text-foreground leading-tight">
         Your Favorite Recipes
       </h1>
       {myFavoriteRecipes.length === 0 ? (
-        <p className="text-center text-xl text-muted-foreground py-10">
+        <p className="text-center text-2xl text-muted-foreground py-16 font-medium">
           It looks like you haven&apos;t added any recipes to your favorites yet.
           <br />
-          Head over to <Link href="/" className="text-primary hover:underline">Browse Recipes</Link> to find some!
+          <Link href="/" className="text-primary hover:underline font-semibold">
+            Head over to Browse Recipes
+          </Link> to find some inspiration!
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {myFavoriteRecipes.map((favoriteItem) => (
             <RecipeDisplayCard
-              key={favoriteItem.recipeId} // Use recipeId as key for consistency with TheMealDB
+              key={favoriteItem.recipeId}
               recipeId={favoriteItem.recipeId}
               recipeName={favoriteItem.recipeName}
               imageUrl={favoriteItem.imageUrl}
-              showRemoveButton={true} // Explicitly show the remove button on this page
+              showRemoveButton={true}
               onRemoveFromFavorites={handleRemoveFavoriteFromList}
+              // Note: Category is not stored in DB, so it won't appear on favorite cards unless fetched separately.
+              // For this minimal design, we'll omit it here.
             />
           ))}
         </div>

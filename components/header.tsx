@@ -8,18 +8,18 @@ import { UtensilsCrossed } from 'lucide-react'; // Using Lucide for icons
  */
 export function AppHeader() {
   return (
-    <header className="bg-primary text-primary-foreground py-4 px-6 flex items-center justify-between shadow-md">
+    <header className="bg-card text-card-foreground py-4 px-6 flex items-center justify-between shadow-md sticky top-0 z-50"> {/* Use card colors, make it sticky */}
       {/* Application title and logo, links to the home page */}
-      <Link href="/" className="flex items-center gap-2 text-lg font-bold hover:opacity-80 transition-opacity">
-        <UtensilsCrossed className="w-6 h-6" />
-        <span>Recipe Explorer</span> {/* Slightly more evocative name */}
+      <Link href="/" className="flex items-center gap-2 text-2xl font-heading font-extrabold text-primary hover:opacity-90 transition-opacity"> {/* Use font-heading, primary color */}
+        <UtensilsCrossed className="w-7 h-7" /> {/* Slightly larger icon */}
+        <span>Recipe Explorer</span>
       </Link>
       {/* Main navigation links */}
-      <nav className="flex items-center gap-4">
-        <Link href="/" className="hover:underline underline-offset-4">
+      <nav className="flex items-center gap-6"> {/* Increased gap */}
+        <Link href="/" className="text-lg font-medium text-foreground hover:text-primary transition-colors"> {/* Larger text, color transition */}
           Browse Recipes
         </Link>
-        <Link href="/favorites" className="hover:underline underline-offset-4">
+        <Link href="/favorites" className="text-lg font-medium text-foreground hover:text-primary transition-colors"> {/* Larger text, color transition */}
           My Favorites
         </Link>
       </nav>

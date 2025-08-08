@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Heart, Loader2, Youtube } from 'lucide-react'; // Added Youtube icon
+import { Heart, Loader2, Youtube } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
-// Detailed type definition for a meal from TheMealDB API lookup
 interface FullMealDetails {
   idMeal: string;
   strMeal: string;
@@ -14,19 +13,18 @@ interface FullMealDetails {
   strInstructions: string;
   strCategory: string;
   strArea: string;
-  strYoutube: string | null; // Can be null
-  [key: string]: string | null; // For dynamic ingredient/measure properties
+  strYoutube: string | null;
+  [key: string]: string | null;
 }
 
-export default function SingleRecipePage({ params }: { params: { id: string } }) { // Renamed for clarity
-  const { id: recipeIdFromUrl } = params; // Destructure and rename for clarity
-  const [recipeDetails, setRecipeDetails] = useState<FullMealDetails | null>(null); // Renamed for clarity
-  const [isLoadingDetails, setIsLoadingDetails] = useState(true); // Renamed for clarity
-  const [isRecipeFavorited, setIsRecipeFavorited] = useState(false); // Renamed for clarity
-  const [isUpdatingFavoriteStatus, setIsUpdatingFavoriteStatus] = useState(false); // Renamed for clarity
+export default function SingleRecipePage({ params }: { params: { id: string } }) {
+  const { id: recipeIdFromUrl } = params;
+  const [recipeDetails, setRecipeDetails] = useState<FullMealDetails | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(true);
+  const [isRecipeFavorited, setIsRecipeFavorited] = useState(false);
+  const [isUpdatingFavoriteStatus, setIsUpdatingFavoriteStatus] = useState(false);
   const { toast } = useToast();
 
-  // Fetches detailed recipe information from TheMealDB API
   const fetchRecipeData = useCallback(async () => {
     setIsLoadingDetails(true);
     try {
@@ -38,7 +36,7 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
       if (data.meals && data.meals.length > 0) {
         setRecipeDetails(data.meals[0]);
       } else {
-        setRecipeDetails(null); // No recipe found for this ID
+        setRecipeDetails(null);
       }
     } catch (error) {
       console.error("Error fetching recipe details:", error);
@@ -52,7 +50,6 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
     }
   }, [recipeIdFromUrl, toast]);
 
-  // Checks if the current recipe is in the user's favorites
   const checkFavoriteStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/favorites");
@@ -67,16 +64,13 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
     }
   }, [recipeIdFromUrl]);
 
-  // Effect to run fetches on component mount and when recipeId changes
   useEffect(() => {
     fetchRecipeData();
     checkFavoriteStatus();
   }, [fetchRecipeData, checkFavoriteStatus]);
 
-  // Helper function to extract ingredients and measures from the API response
   const extractIngredients = (meal: FullMealDetails) => {
     const ingredientsList: string[] = [];
-    // TheMealDB API provides ingredients and measures in properties like strIngredient1, strMeasure1, etc.
     for (let i = 1; i <= 20; i++) {
       const ingredient = meal[`strIngredient${i}`];
       const measure = meal[`strMeasure${i}`];
@@ -87,14 +81,12 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
     return ingredientsList;
   };
 
-  // Handler for adding/removing the recipe from favorites
   const handleToggleFavorite = async () => {
-    if (!recipeDetails) return; // Can't favorite if no recipe details are loaded
+    if (!recipeDetails) return;
 
     setIsUpdatingFavoriteStatus(true);
     try {
       if (isRecipeFavorited) {
-        // If currently favorited, send a DELETE request to remove it
         const response = await fetch(`/api/favorites/${recipeDetails.idMeal}`, {
           method: "DELETE",
         });
@@ -113,7 +105,6 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
           });
         }
       } else {
-        // If not favorited, send a POST request to add it
         const response = await fetch("/api/favorites", {
           method: "POST",
           headers: {
@@ -154,9 +145,9 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
 
   if (isLoadingDetails) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 text-gray-600">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-xl">Fetching recipe magic...</p>
+      <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+        <Loader2 className="h-14 w-14 animate-spin text-primary mb-6" />
+        <p className="text-2xl font-medium">Fetching recipe magic...</p>
         <span className="sr-only">Loading recipe details...</span>
       </div>
     );
@@ -164,7 +155,7 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
 
   if (!recipeDetails) {
     return (
-      <div className="text-center text-2xl font-semibold text-muted-foreground py-10">
+      <div className="text-center text-3xl font-heading font-semibold text-muted-foreground py-20">
         Oops! This recipe couldn't be found.
       </div>
     );
@@ -174,56 +165,38 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
   const youtubeVideoId = recipeDetails.strYoutube ? recipeDetails.strYoutube.split("v=")[1] : null;
 
   return (
-    <article className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start py-8">
-      {/* Recipe Image Section */}
-      <div className="relative w-full aspect-video md:aspect-[4/3] lg:aspect-[5/4] rounded-lg overflow-hidden shadow-lg">
+    <article className="space-y-10 py-8 animate-fade-in"> {/* Added fade-in animation */}
+      {/* Large Banner Image Section */}
+      <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-xl overflow-hidden shadow-xl"> {/* Larger, more prominent image */}
         <Image
-          src={recipeDetails.strMealThumb || "/placeholder.svg?height=400&width=600&query=tasty dish"}
+          src={recipeDetails.strMealThumb || "/placeholder.svg?height=600&width=900&query=tasty dish banner"}
           alt={recipeDetails.strMeal}
           fill
           style={{ objectFit: "cover" }}
           priority
         />
-      </div>
-
-      {/* Recipe Details Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-gray-50">
+        {/* Subtle gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 p-6 text-white">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-heading font-extrabold leading-tight drop-shadow-lg">
             {recipeDetails.strMeal}
           </h1>
-          <Button
-            variant={isRecipeFavorited ? "secondary" : "outline"}
-            size="lg"
-            onClick={handleToggleFavorite}
-            disabled={isUpdatingFavoriteStatus}
-            className="flex items-center gap-2 min-w-[200px] justify-center"
-          >
-            {isUpdatingFavoriteStatus ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Heart className={isRecipeFavorited ? "h-5 w-5 fill-red-500 text-red-500" : "h-5 w-5"} />
-            )}
-            {isRecipeFavorited ? "Remove from Favorites" : "Add to Favorites"}
-          </Button>
+          <span className="bg-primary text-primary-foreground text-sm sm:text-base font-semibold px-3 py-1 rounded-full shadow-md mt-2 inline-block">
+            {recipeDetails.strCategory}
+          </span>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base text-muted-foreground">
-          <div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Category:</span> {recipeDetails.strCategory}
-          </div>
-          <div>
-            <span className="font-semibold text-gray-700 dark:text-gray-300">Origin:</span> {recipeDetails.strArea}
-          </div>
-        </div>
-
-        {/* Ingredients List */}
-        <div>
-          <h2 className="text-2xl font-bold mb-3 text-gray-800 dark:text-gray-100">Ingredients</h2>
-          <ul className="list-disc list-inside space-y-1 text-lg text-gray-700 dark:text-gray-200">
+      <div className="grid md:grid-cols-3 gap-10 items-start"> {/* Main content grid */}
+        {/* Ingredients List - Two Columns */}
+        <div className="md:col-span-1 bg-card p-6 rounded-xl shadow-md border border-border">
+          <h2 className="text-3xl font-heading font-bold mb-6 text-foreground">Ingredients</h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-lg text-foreground"> {/* Two columns for ingredients */}
             {ingredientsForDisplay.length > 0 ? (
               ingredientsForDisplay.map((ingredient, index) => (
-                <li key={index}>{ingredient}</li>
+                <li key={index} className="flex items-center gap-2">
+                  <span className="text-primary">•</span> {ingredient}
+                </li>
               ))
             ) : (
               <li>No ingredients listed for this recipe.</li>
@@ -232,37 +205,41 @@ export default function SingleRecipePage({ params }: { params: { id: string } })
         </div>
 
         {/* Cooking Instructions */}
-        <div>
-          <h2 className="text-2xl font-bold mb-3 text-gray-800 dark:text-gray-100">Instructions</h2>
-          <p className="text-lg leading-relaxed whitespace-pre-line text-gray-700 dark:text-gray-200">
+        <div className="md:col-span-2 bg-card p-6 rounded-xl shadow-md border border-border">
+          <h2 className="text-3xl font-heading font-bold mb-6 text-foreground">Instructions</h2>
+          <p className="text-lg leading-relaxed whitespace-pre-line text-foreground space-y-4"> {/* Increased line height and paragraph spacing */}
             {recipeDetails.strInstructions || "No detailed instructions available for this recipe."}
           </p>
         </div>
+      </div>
 
-        {/* YouTube Video (if available) */}
+      {/* Action Buttons and YouTube Video */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mt-10">
+        <Button
+          variant={isRecipeFavorited ? "secondary" : "default"}
+          size="lg"
+          onClick={handleToggleFavorite}
+          disabled={isUpdatingFavoriteStatus}
+          className="flex items-center gap-2 px-8 py-3 rounded-full text-lg font-semibold shadow-md hover:shadow-lg transition-all"
+        >
+          {isUpdatingFavoriteStatus ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            <Heart className={isRecipeFavorited ? "h-6 w-6 fill-red-500 text-red-500" : "h-6 w-6"} />
+          )}
+          {isRecipeFavorited ? "Remove from Favorites" : "Add to Favorites"}
+        </Button>
+
         {youtubeVideoId && (
-          <div>
-            <h2 className="text-2xl font-bold mb-3 text-gray-800 dark:text-gray-100">Watch Video Instructions</h2>
-            <div className="relative aspect-video w-full rounded-lg overflow-hidden shadow-md">
-              <iframe
-                src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                title={`YouTube video for ${recipeDetails.strMeal}`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute top-0 left-0 w-full h-full"
-              ></iframe>
-            </div>
-            <a
-              href={recipeDetails.strYoutube!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-blue-600 hover:underline mt-2"
-            >
-              <Youtube className="h-5 w-5" />
-              View on YouTube
-            </a>
-          </div>
+          <a
+            href={recipeDetails.strYoutube!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 text-lg font-semibold text-primary hover:underline hover:text-primary-dark transition-colors"
+          >
+            <Youtube className="h-6 w-6" />
+            Watch Video Instructions
+          </a>
         )}
       </div>
     </article>

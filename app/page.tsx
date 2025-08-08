@@ -1,39 +1,42 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react"; // Added useCallback for memoization
-import { RecipeDisplayCard } from "@/components/recipe-card"; // Renamed component
+import { useState, useEffect, useCallback } from "react";
+import { RecipeDisplayCard } from "@/components/recipe-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Search } from 'lucide-react';
 
-// Type definition for a meal object from TheMealDB API search results
 interface MealSummary {
   idMeal: string;
   strMeal: string;
   strMealThumb: string;
-  strInstructions: string; // TheMealDB search results sometimes include this, useful for description
+  strInstructions: string;
+  strCategory: string; // Added category to fetch
 }
 
-export default function RecipeHomePage() { // Renamed for clarity
-  const [availableRecipes, setAvailableRecipes] = useState<MealSummary[]>([]); // Renamed for clarity
-  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]); // Renamed for clarity
-  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true); // Renamed for clarity
-  const [currentSearchTerm, setCurrentSearchTerm] = useState("chicken"); // More descriptive name
-  const [isPerformingSearch, setIsPerformingSearch] = useState(false); // Renamed for clarity
+export default function RecipeHomePage() {
+  const [availableRecipes, setAvailableRecipes] = useState<MealSummary[]>([]);
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
+  const [currentSearchTerm, setCurrentSearchTerm] = useState("chicken");
+  const [isPerformingSearch, setIsPerformingSearch] = useState(false);
   const { toast } = useToast();
 
-  // Function to fetch recipes from TheMealDB API
   const fetchRecipesFromApi = useCallback(async (query: string) => {
     setIsPerformingSearch(true);
-    setAvailableRecipes([]); // Clear previous results immediately
+    setAvailableRecipes([]);
     try {
       const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setAvailableRecipes(data.meals || []); // The API returns null if no meals found
+      // TheMealDB search results don't always include category directly,
+      // so we'll fetch random recipes first to get categories, then search.
+      // For simplicity, we'll assume search results have enough info or default category.
+      // A more robust solution would involve fetching details for each search result.
+      setAvailableRecipes(data.meals || []);
     } catch (error) {
       console.error("Error fetching recipes from TheMealDB:", error);
       toast({
@@ -44,9 +47,8 @@ export default function RecipeHomePage() { // Renamed for clarity
     } finally {
       setIsPerformingSearch(false);
     }
-  }, [toast]); // Dependency array for useCallback
+  }, [toast]);
 
-  // Function to fetch current favorite recipe IDs from our backend
   const fetchCurrentFavorites = useCallback(async () => {
     try {
       const response = await fetch("/api/favorites");
@@ -55,34 +57,29 @@ export default function RecipeHomePage() { // Renamed for clarity
         setFavoriteRecipeIds(data.map((fav: { recipeId: string }) => fav.recipeId));
       } else {
         console.error("Failed to fetch favorite IDs:", response.statusText);
-        // No toast here, as it's a background fetch and might not be critical for initial page load
       }
     } catch (error) {
       console.error("Error fetching favorite IDs:", error);
     } finally {
-      setIsLoadingRecipes(false); // Mark initial loading complete after both fetches
+      setIsLoadingRecipes(false);
     }
-  }, []); // Dependency array for useCallback
+  }, []);
 
-  // Initial data fetch on component mount
   useEffect(() => {
     fetchRecipesFromApi(currentSearchTerm);
     fetchCurrentFavorites();
-  }, [fetchRecipesFromApi, fetchCurrentFavorites, currentSearchTerm]); // Include currentSearchTerm as a dependency
+  }, [fetchRecipesFromApi, fetchCurrentFavorites, currentSearchTerm]);
 
-  // Handler for the search form submission
   const handleSearchSubmission = (e: React.FormEvent) => {
     e.preventDefault();
     const searchInput = (e.target as HTMLFormElement).elements.namedItem("search") as HTMLInputElement;
-    if (searchInput.value.trim() !== currentSearchTerm) { // Only search if term changed
+    if (searchInput.value.trim() !== currentSearchTerm) {
       setCurrentSearchTerm(searchInput.value.trim());
     }
   };
 
-  // Handler for toggling a recipe's favorite status
   const handleToggleRecipeFavorite = async (recipeId: string, recipeName: string, imageUrl: string, isCurrentlyFavorite: boolean) => {
     if (isCurrentlyFavorite) {
-      // Logic to remove from favorites
       try {
         const response = await fetch(`/api/favorites/${recipeId}`, {
           method: "DELETE",
@@ -110,7 +107,6 @@ export default function RecipeHomePage() { // Renamed for clarity
         });
       }
     } else {
-      // Logic to add to favorites
       try {
         const response = await fetch("/api/favorites", {
           method: "POST",
@@ -145,36 +141,38 @@ export default function RecipeHomePage() { // Renamed for clarity
   };
 
   return (
-    <section className="space-y-8 py-8">
-      <h1 className="text-4xl font-extrabold text-center text-gray-800 dark:text-gray-100">
+    <section className="space-y-10 py-8"> {/* Increased spacing */}
+      <h1 className="text-5xl font-heading font-extrabold text-center text-foreground leading-tight"> {/* Larger, bolder heading */}
         Discover Delicious Recipes
       </h1>
-      <form onSubmit={handleSearchSubmission} className="flex gap-3 max-w-lg mx-auto p-2 bg-white rounded-lg shadow-md">
+      <form onSubmit={handleSearchSubmission} className="flex gap-3 max-w-xl mx-auto p-2 bg-card rounded-full shadow-lg border border-border"> {/* Rounded search bar, shadow, border */}
         <Input
           type="search"
           name="search"
           placeholder="Search for a dish, e.g., 'pasta' or 'chicken'..."
           defaultValue={currentSearchTerm}
-          className="flex-1 border-none focus-visible:ring-0"
+          className="flex-1 border-none focus-visible:ring-0 bg-transparent text-lg px-4" // Larger text, no border/ring
         />
-        <Button type="submit" disabled={isPerformingSearch} className="px-6 py-2">
-          {isPerformingSearch ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+        <Button type="submit" disabled={isPerformingSearch} className="px-8 py-3 rounded-full text-lg font-semibold shadow-md hover:shadow-lg transition-all"> {/* Rounded, larger button */}
+          {isPerformingSearch ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
           Search
         </Button>
       </form>
 
       {isLoadingRecipes || isPerformingSearch ? (
-        <div className="flex flex-col items-center justify-center h-64 text-gray-600">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-lg">Whipping up some recipes for you...</p>
+        <div className="flex flex-col items-center justify-center h-80 text-muted-foreground"> {/* Increased height */}
+          <Loader2 className="h-14 w-14 animate-spin text-primary mb-6" /> {/* Larger loader */}
+          <p className="text-2xl font-medium">Whipping up some recipes for you...</p> {/* Larger text */}
           <span className="sr-only">Loading recipes...</span>
         </div>
       ) : availableRecipes.length === 0 ? (
-        <p className="text-center text-xl text-muted-foreground py-10">
-          No recipes found for &quot;{currentSearchTerm}&quot;. Perhaps try a different ingredient or dish name?
+        <p className="text-center text-2xl text-muted-foreground py-16 font-medium"> {/* Larger text, more padding */}
+          No recipes found for &quot;<span className="font-semibold text-foreground">{currentSearchTerm}</span>&quot;.
+          <br />
+          Perhaps try a different ingredient or dish name?
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"> {/* Increased gap */}
           {availableRecipes.map((recipe) => (
             <RecipeDisplayCard
               key={recipe.idMeal}
@@ -182,6 +180,7 @@ export default function RecipeHomePage() { // Renamed for clarity
               recipeName={recipe.strMeal}
               imageUrl={recipe.strMealThumb}
               shortDescription={recipe.strInstructions?.substring(0, 100) + "..." || "No detailed description available."}
+              category={recipe.strCategory || "Dish"} // Pass category, default if not available
               isCurrentlyFavorite={favoriteRecipeIds.includes(recipe.idMeal)}
               onToggleFavoriteStatus={handleToggleRecipeFavorite}
             />
